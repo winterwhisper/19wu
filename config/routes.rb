@@ -13,6 +13,9 @@ NineteenWu::Application.routes.draw do
     get 'qcode', to: 'participants#qcode'
     resources :participants , :only => [:index, :update]
     resources :collaborators, :only => [:index, :create, :destroy]
+    resources :topics       , :only => [:new, :create, :show] do
+      resource :reply       , :only => [:create]                  , :controller => 'topic_reply'
+    end
     resources :export       , :only => [:index]
     resources :changes      , :only => [:index, :new, :create]    , :controller => 'event_changes'
   end
@@ -37,6 +40,9 @@ NineteenWu::Application.routes.draw do
     put '/invitations/:id/mail' => 'invitations#mail', :as => :mail_invitation
     get 'invitations/upgrade' => 'invitations#upgrade', :as => :upgrade_invitation
     put 'invitations/:id/upgrade_invite' => 'invitations#upgrade_invite', :as => :upgrade_invite_invitation
+    resource :user_phone, only: [:edit, :update], format: false do
+      post 'send_code'
+    end
   end
   scope 'settings' do
     resource :profile, :only => [:show, :update]
