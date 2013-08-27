@@ -10,6 +10,35 @@ require 'capybara/rails'
 #require 'rspec/autorun' # http://j.mp/WLeAs3
 require 'capybara/email/rspec'
 
+def locate_executable(name)
+  found = nil
+  (ENV['PATH'] || '').split(File::PATH_SEPARATOR).each do |dir|
+    path = File.join(dir, name)
+    found = [path, path + '.exe'].find { |p| File.executable?(p) }
+    break if found
+  end
+  found
+end
+
+selenium_browser = if ENV['SELENIUM_BROWSER'] == 'phantomjs'
+                     :poltergeist
+                   elsif ENV['SELENIUM_BROWSER']
+                     ENV['SELENIUM_BROWSER'].to_sym
+                   elsif locate_executable('phantomjs')
+                     :poltergeist
+                   else
+                     :firefox
+                   end
+
+if selenium_browser == :poltergeist
+  require 'capybara/poltergeist'
+else
+  Capybara.register_driver selenium_browser do |app|
+    Capybara::Selenium::Driver.new(app, :browser => selenium_browser)
+  end
+end
+Capybara.javascript_driver = selenium_browser
+
 class Capybara::Email::Driver
   def raw
     if email.mime_type == 'multipart/alternative' && email.html_part
@@ -17,6 +46,18 @@ class Capybara::Email::Driver
     else
       email.body.encoded
     end
+  end
+end
+
+Capybara.server do |app, port|
+  # if thin is available, start server using thin
+  begin
+    require 'rack/handler/thin'
+    Rack::Handler::Thin.run(app, :Port => port) do |server|
+      server.silent = true
+    end
+  rescue LoadError
+    # ignore
   end
 end
 

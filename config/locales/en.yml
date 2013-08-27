@@ -44,7 +44,7 @@ en:
     menu:
       activities: 最新动态
       created_events: 发起的活动
-      joined_events: 参加的活动
+      ordered_events: 参加的活动
     body:
       empty: 暂时没有内容
 
@@ -73,6 +73,7 @@ en:
     check_in_button: "Check in"
     has_checked_in_button: "Checked"
     invite_button: "Invite"
+    my_orders: "My orders"
 
   flash:
     events:
@@ -88,6 +89,14 @@ en:
       checked_in_wrong_checkin_code: "Your checkin code is wrong, please contact organizer!"
       checked_in_more_than_1_time: "You have checked in, please don't mkae duplicated checkin!"
       joined: "您已经报名参与此活动"
+    my_orders:
+      canceled: '你已经成功取消订单。'
+      request_refund: '请等待管理员处理您的退款请求.'
+
+  confirmations:
+    my_orders:
+      cancel: '确定要取消订单么？'
+      refund: '确定要退款么？该操作无法撤销！'
 
   views:
     edit: "Edit"
@@ -132,6 +141,17 @@ en:
         false: "Join now"
         true: "Don't forget to attend"
         checked_in: "Enjoy your time"
+    my_orders:
+      event: '活动'
+      items: '票种'
+      price: '价格（￥）'
+      status: '状态'
+      trade_no: '订单编号'
+      created_at: '下单时间'
+      operations: '操作'
+      pay: '支付'
+      cancel: '取消'
+      request_refund: '退款'
 
   email:
     welcome:

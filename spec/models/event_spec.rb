@@ -83,24 +83,23 @@ describe Event do
     end
   end
 
-  describe '#participated_users.recent' do
+  describe '#ordered_users.recent' do
     let(:event) { create(:event) }
-
-    it 'sorts participants by join date' do
-      first = create(:user)
-      second = create(:user)
-
-      EventParticipant.create({ :user_id => first.id, :event_id => event.id, :created_at => '2012-01-01' },
-                              :without_protection => true)
-      EventParticipant.create({ :user_id => second.id, :event_id => event.id, :created_at => '2012-01-02' },
-                              :without_protection => true)
-
-      event.participated_users.recent.should == [second, first]
+    let!(:order1) {
+      Timecop.freeze('2010-11-12') do
+        create(:order_with_items, event: event)
+      end
+    }
+    let!(:order2) {
+      Timecop.freeze('2010-11-13') do
+        create(:order_with_items, event: event)
+      end
+    }
+    it 'sorts users by join date' do
+      event.ordered_users.recent.should == [order2.user, order1.user]
     end
-
-    it 'can limit the number of participants' do
-      event.participated_users << create_list(:user, 2)
-      event.participated_users.recent(1).should have(1).user
+    it 'can limit the number of users' do
+      event.ordered_users.recent(1).should have(1).user
     end
   end
 
@@ -128,29 +127,42 @@ describe Event do
   describe '#remind_participants' do
     let(:user) { create(:user, :confirmed) }
     let(:event) { create(:event, start_time: 1.day.since, end_time: nil, user: user) }
+    let(:order) { create(:order_with_items, event: event) }
     subject { ActionMailer::Base.deliveries.last }
 
     before do
+      order
       ActionMailer::Base.deliveries.clear
-      event.participated_users << user
     end
 
     it 'should remind all participants' do
       Event.remind_participants
       subject.subject.should eql '19屋活动提醒'
-      subject.to.should eql [user.email]
+      subject.to.should eql [order.user.email]
+    end
+  end
+
+  describe '#started?' do
+    subject { event }
+    context '2 days ago' do
+      before { event.update_attribute :start_time, 2.day.ago }
+      its(:started?) { should be_true }
+    end
+    context '1 day later' do
+      before { event.update_attribute :start_time, 1.day.since }
+      its(:started?) { should be_false }
     end
   end
 
   describe '#finished?' do
-    it 'should return true if current time has past the end time' do
-      event = create(:event, start_time: 2.day.ago, end_time: 1.day.ago)
-      event.finished?.should == true
+    subject { event }
+    context '2 days ago' do
+      before { event.update_attribute :end_time, 2.day.ago }
+      its(:finished?) { should be_true }
     end
-
-    it 'should return false if current time does not reach the end time' do
-      event = create(:event, start_time: 1.day.since, end_time: 2.day.since)
-      event.finished?.should == false
+    context '1 day later' do
+      before { event.update_attribute :end_time, 1.day.since }
+      its(:finished?) { should be_false }
     end
   end
 
@@ -198,5 +210,10 @@ describe Event do
       event = create(:event, slug: "ruby", created_at: '2013-05-05 23:12:08')
       expect(event.checkin_code).to eq '328'
     end
+  end
+
+  describe 'tickets' do
+    subject { event.tap(&:save) }
+    its('tickets.size') { should eql 1 }
   end
 end

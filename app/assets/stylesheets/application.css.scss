@@ -24,21 +24,24 @@
 
 /* modules */
 
+@import "modules/nav-bar";
 @import "modules/user-bar";
 @import "modules/user-profile";
 
+@import "modules/table";
 @import "modules/list";
 @import "modules/form";
+@import "modules/upload";
 @import "modules/icons";
 @import "modules/label";
 @import "modules/menu";
 
 @import "modules/brand";
-@import "modules/checkin";
 @import "modules/jumbotron";
 @import "modules/social-count";
 
 @import "modules/home";
 @import "modules/event";
+@import "modules/topic";
 
-@import "modules/participant";
+@import "modules/event-map";
