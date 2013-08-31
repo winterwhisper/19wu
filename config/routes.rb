@@ -8,35 +8,57 @@ NineteenWu::Application.routes.draw do
       post 'follow'
       post 'unfollow'
       get 'followers'
-      get 'checkin/:checkin_code', to: 'events#checkin', as: :checkin
     end
-    get 'qcode', to: 'participants#qcode'
-    resources :participants , :only => [:index, :update]
+    resources :participants , :only => [:index] do
+      collection do
+        get :checkin
+        post :update
+      end
+    end
     resources :collaborators, :only => [:index, :create, :destroy]
+    resources :topics       , :only => [:new, :create, :show] do
+      resource :reply       , :only => [:create]                  , :controller => 'topic_reply'
+    end
     resources :export       , :only => [:index]
     resources :changes      , :only => [:index, :new, :create]    , :controller => 'event_changes'
+    resources :tickets      , :controller => 'event_tickets'
+    resources :orders       , :only => [:create]                  , :controller => 'event_orders'
   end
 
   get "events/:event_id/summary", to: "event_summaries#new", as: :new_event_summary
   post "events/:event_id/summary", to: "event_summaries#create", as: :create_event_summary
-  put "events/:event_id/summary", to: "event_summaries#update"
+  patch "events/:event_id/summary", to: "event_summaries#update"
 
   get ":slug" => "group#event", :constraints => SlugConstraint, :as => :slug_event
   get ":slug/followers" => "group#followers"
-  get 'joined_events', to: "events#joined"
-  match '/photos', to: "photo#create", :via => [:post, :put]
+  get 'ordered_events', to: "events#ordered"
+  post '/photos', to: "photo#create"
   post "/content/preview/" => "home#content_preview"
 
   authenticated :user do
-    root to: "home#index"
+    root to: "home#index", as: :authenticated_root
   end
   as :user do
     root to: 'home#page'
     get 'cohort' => 'users#cohort'
     get 'invitations' => 'invitations#index'
-    put '/invitations/:id/mail' => 'invitations#mail', :as => :mail_invitation
+    patch '/invitations/:id/mail' => 'invitations#mail', :as => :mail_invitation
     get 'invitations/upgrade' => 'invitations#upgrade', :as => :upgrade_invitation
-    put 'invitations/:id/upgrade_invite' => 'invitations#upgrade_invite', :as => :upgrade_invite_invitation
+    patch 'invitations/:id/upgrade_invite' => 'invitations#upgrade_invite', :as => :upgrade_invite_invitation
+    resource :user_phone, only: [:edit, :update], format: false do
+      post 'send_code'
+    end
+    resources :user_orders, only: [:index], format: false do
+      member do
+        get 'pay'
+
+        put 'cancel'
+        put 'request_refund'
+
+        get 'alipay_done'
+        post 'alipay_notify'
+      end
+    end
   end
   scope 'settings' do
     resource :profile, :only => [:show, :update]
@@ -44,15 +66,15 @@ NineteenWu::Application.routes.draw do
       get 'account' => 'registrations#edit', :as => 'account'
     end
   end
-  devise_for :users, :controllers => { :registrations => "registrations", :invitations => 'invitations' }
+  devise_for :users, :controllers => { :sessions => "sessions", :registrations => "registrations", :invitations => 'invitations' }
 
   namespace :api, defaults: {format: 'json'} do
     get '/events/:id/participants', to: "events#participants"
   end
 
-  if defined?(MailsViewer)
-    mount MailsViewer::Engine => '/delivered_mails'
-  end
+  mount ChinaCity::Engine => '/china_city'
+  mount MailsViewer::Engine => '/delivered_mails' if defined?(MailsViewer)
+  mount JasmineRails::Engine => "/specs" if defined?(JasmineRails)
 
   # Fallback for /:login when user login is conflict with other routes
   #

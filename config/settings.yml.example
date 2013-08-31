@@ -14,10 +14,15 @@ defaults: &defaults
   # By default, with an empty string, this feature will be disabled.
   baidumap_ak: ''
 
+  alipay:
+    pid: 2083528375739838
+    key: vwg38dk375fsagth3449flaldjhsdoek
+    seller_email: admin@example.com
+
   sms:
     tui3:
       username: 'saberma'
-      api_key: '666666'
+      password: '666666'
 
   email: &email
     # Edit according to the smtp account domain.
@@ -67,9 +72,10 @@ development:
   <<: *defaults
   host: 'localhost:3000'
 
+  sms: []
   email:
     <<: *email
-    from: 'development@19wu.com'
+    from: '19wu <development@19wu.com>'
     delivery_method: :file
 
 test:
@@ -78,6 +84,7 @@ test:
   default_locale: 'zh-CN'
   host: 'localhost:3000'
 
+  sms: []
   email:
     <<: *email
     from: 'test@19wu.com'
@@ -89,6 +96,10 @@ production:
   # Generate a secret setting for production and do not share it in public repo
   #
   # The token must be at least 30 characters, otherwise the default on in
-  # config/initializers/secret_token.rb is used
+  # config/initializers/secret_token.rb is used.
+  #
+  # The option `secret_key_base` is for Rails 4. Set it and keep the original
+  # `secret_token` setting.
   #
   # secret_token: ''
+  # secret_key_base: ''

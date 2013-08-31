@@ -75,6 +75,7 @@ describe User do
       its(:profile) { should be_a_kind_of(Profile) }
     end
   end
+
   describe '#send_reset_password_instructions' do # issue#287
     context 'user is waiting for invite' do
       let(:user) { User.invite! email: 'demo@19wu.com', skip_invitation: true }
@@ -82,6 +83,62 @@ describe User do
       it 'should get errors' do
         user.errors[:email].first.should eql '您正申请注册，请等待邀请邮件.'
       end
+    end
+  end
+
+  describe 'devise mails', :delay => true do
+    before { user.save }
+
+    describe '#send_reset_password_instructions' do
+      context 'when user is waiting for invitation' do
+        before { user.stub(:invited_to_sign_up? => true) }
+        it 'does not send asynchronously' do
+          expect {
+            user.send_reset_password_instructions
+          }.to change{Delayed::Job.count}.by(0)
+        end
+      end
+      context 'when user is not waiting for invitation' do
+        before { user.stub(:invited_to_sign_up? => false) }
+        it 'sends asynchronously' do
+          expect {
+            user.send_reset_password_instructions
+          }.to change{Delayed::Job.count}.by(1)
+        end
+      end
+    end
+    describe '#send_confirmation_instructions' do
+      it 'sends asynchronously' do
+        expect {
+          user.send_confirmation_instructions
+        }.to change{Delayed::Job.count}.by(1)
+      end
+    end
+    describe '#send_on_create_confirmation_instructions' do
+      it 'sends asynchronously' do
+        expect {
+          user.send :send_on_create_confirmation_instructions
+        }.to change{Delayed::Job.count}.by(1)
+      end
+    end
+  end
+
+  describe '#ordered?' do
+    before { user.save }
+    let(:event) { create :event }
+    let(:another_event) { create :event, slug: 'another' }
+
+    before {
+      create(:order_with_items, user: user, event: event)
+    }
+
+    context 'with placed order on the event' do
+      subject { user.ordered?(event) }
+      it { should be_true }
+    end
+    context 'without orders on the event' do
+      subject { user.ordered?(another_event) }
+      it { should be_false }
     end
   end
 end

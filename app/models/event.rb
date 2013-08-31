@@ -4,11 +4,13 @@ class Event < ActiveRecord::Base
   belongs_to :user
   belongs_to :group
   has_one :event_summary
-  has_many :participants, :class_name => "EventParticipant"
-  has_many :changes,      :class_name => "EventChange"
-  has_many :participated_users, :source => :user, :through => :participants do
+  has_many :participants, :class_name => "EventOrderParticipant"
+  has_many :updates,      :class_name => "EventChange"
+  has_many :tickets,      :class_name => "EventTicket"
+  has_many :orders,       :class_name => "EventOrder"
+  has_many :ordered_users, :source => :user, :through => :orders do # TODO: uniq
     def recent(count = nil)
-      order('event_participants.created_at DESC').limit(count)
+      order('event_orders.created_at DESC').limit(count)
     end
     def with_phone
       where("users.phone is not null and users.phone != ''")
@@ -21,9 +23,6 @@ class Event < ActiveRecord::Base
   has_html_pipeline :location_guide, :markdown
 
   attr_accessor :slug
-  attr_accessible :content, :location, :location_guide, :start_time, :end_time, :title, :slug
-  attr_accessible :compound_start_time_attributes
-  attr_accessible :compound_end_time_attributes
 
   validates :title, :location, presence: true
   validates :slug, presence: true
@@ -32,16 +31,12 @@ class Event < ActiveRecord::Base
   validate :end_time_must_after_start_time
   validate :slug_must_uniq
 
-  scope :latest, order('start_time DESC')
+  scope :latest, -> { order('start_time DESC') }
 
   scope :upcoming, lambda { |today = Time.zone.now|
     tomorrow = today.since(1.day)
     where(:start_time => tomorrow.beginning_of_day..tomorrow.end_of_day)
   }
-
-  def has?(user)
-    return user && participants.exists?(user_id: user.id)
-  end
 
   def sibling_events
     group.events.latest.select { |e| e != self }
@@ -53,10 +48,14 @@ class Event < ActiveRecord::Base
 
   def self.remind_participants
     Event.upcoming.find_each do |e|
-      e.participated_users.each do |participant|
-        UserMailer.delay.reminder_email participant, e
+      e.ordered_users.each do |user|
+        UserMailer.delay.reminder_email user, e
       end
     end
+  end
+
+  def started?
+    start_time.past?
   end
 
   def finished?

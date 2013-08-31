@@ -17,6 +17,7 @@ Password：`666666`
 
 * Ruby 2.0.0 (or 1.9.3)
 * PostgreSQL (or MySQL, SQLite)
+* ImageMagick
 
 ## 安装步骤
 
@@ -66,6 +67,8 @@ rails server
 * [@windy](https://github.com/windy)
 
 [所有贡献者](https://github.com/saberma/19wu/graphs/contributors)
+
+[如何贡献](https://github.com/saberma/19wu/blob/master/CONTRIBUTING.md)
 
 ## 赞助商
 
